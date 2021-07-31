@@ -77,7 +77,7 @@ class DiskManager {
   page_id_t AllocatePage();
 
   /**
-   * Deallocate a page on disk.
+   * Deallocate a page on disk.释放磁盘上的页
    * @param page_id id of the page to deallocate
    */
   void DeallocatePage(page_id_t page_id);

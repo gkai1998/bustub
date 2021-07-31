@@ -47,7 +47,7 @@ class Page {
 
   /** @return true if the page in memory has been modified from the page on disk, false otherwise */
   inline bool IsDirty() { return is_dirty_; }
-
+  inline void SetDirty(bool is) { is_dirty_ = is; }
   /** Acquire the page write latch. */
   inline void WLatch() { rwlatch_.WLock(); }
 

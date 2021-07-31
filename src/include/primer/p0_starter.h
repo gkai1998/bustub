@@ -53,9 +53,7 @@ class Matrix {
   // the array in the destructor.
   T *linear;
   // TODO(P0): Add implementation
-  virtual ~Matrix() {
-    delete[] linear;
-    }
+  virtual ~Matrix() { delete[] linear; }
 };
 
 template <typename T>
