@@ -38,6 +38,10 @@ class IndexIterator {
 
  private:
   // add your own private member variables here
+  B_PLUS_TREE_LEAF_PAGE_TYPE *leaf_page_ptr_;
+  Page *page_ptr_;
+  int index_;
+  BufferPoolManager* buffer_pool_manager_;
 };
 
 }  // namespace bustub
