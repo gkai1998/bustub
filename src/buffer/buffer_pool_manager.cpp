@@ -49,6 +49,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     fetch_frame_id = page_table_[page_id];
     fetch_page = pages_ + fetch_frame_id;
     fetch_page->pin_count_++;
+    replacer_->Pin(fetch_frame_id);
     latch_.unlock();
     return pages_ + fetch_frame_id;
   }
@@ -56,7 +57,6 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     fetch_frame_id = free_list_.front();
     free_list_.pop_front();
     fetch_page = pages_ + fetch_frame_id;
-
   } else if (replacer_->Size() > 0) {
     bool issuccess = replacer_->Victim(&fetch_frame_id);
     if (!issuccess) {
@@ -68,7 +68,7 @@ Page *BufferPoolManager::FetchPageImpl(page_id_t page_id) {
     if (fetch_page->IsDirty()) {
       disk_manager_->WritePage(fetch_page_id, fetch_page->GetData());
     }
-    page_table_.erase(fetch_frame_id);
+    page_table_.erase(fetch_page_id);
   } else {
     latch_.unlock();
     return nullptr;
@@ -90,7 +90,9 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   }
   frame_id_t frame_id = page_table_[page_id];
   Page *unpin_page = pages_ + frame_id;
-  unpin_page->is_dirty_ = is_dirty;
+  if (is_dirty) {
+    unpin_page->is_dirty_ = is_dirty;
+  }
   if (unpin_page->pin_count_ <= 0) {
     latch_.unlock();
     return false;
@@ -102,7 +104,6 @@ bool BufferPoolManager::UnpinPageImpl(page_id_t page_id, bool is_dirty) {
   latch_.unlock();
   return true;
 }
-
 bool BufferPoolManager::FlushPageImpl(page_id_t page_id) {
   // Make sure you call DiskManager::WritePage!
   latch_.lock();
@@ -160,6 +161,7 @@ Page *BufferPoolManager::NewPageImpl(page_id_t *page_id) {
   out_page->ResetMemory();
   out_page->page_id_ = new_page_id;
   out_page->pin_count_ = 1;
+  out_page->is_dirty_ = false;
   page_table_.insert(std::pair<page_id_t, frame_id_t>(new_page_id, frame_id));
   *page_id = new_page_id;
   latch_.unlock();
@@ -174,14 +176,14 @@ bool BufferPoolManager::DeletePageImpl(page_id_t page_id) {
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
   latch_.lock();
   if (page_table_.find(page_id) == page_table_.end()) {
-    disk_manager_->DeallocatePage(page_id);
+    // disk_manager_->DeallocatePage(page_id);
     latch_.unlock();
     return true;
   }
   frame_id_t frame_id = page_table_[page_id];
   Page *delete_page = pages_ + frame_id;
   if (delete_page->pin_count_ > 0) {
-    latch_.lock();
+    latch_.unlock();
     return false;
   }
   page_table_.erase(page_id);

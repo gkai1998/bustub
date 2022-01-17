@@ -19,12 +19,9 @@ LRUReplacer::LRUReplacer(size_t num_pages) : size(num_pages), timestamp(1) {}
 LRUReplacer::~LRUReplacer() = default;
 
 bool LRUReplacer::Victim(frame_id_t *frame_id) {
-  if (*frame_id > size) {
-    return false;
-  }
-
   lock.lock();
   if (hash_map.empty()) {
+    lock.unlock();
     return false;
   }
 
@@ -37,10 +34,9 @@ bool LRUReplacer::Victim(frame_id_t *frame_id) {
       result_timestamp = (*it).second;
     }
   }
-  lock.unlock();
   *frame_id = result;
+  lock.unlock();
   Pin(result);
-
   return true;
 }
 
@@ -53,6 +49,7 @@ void LRUReplacer::Pin(frame_id_t frame_id) {
 void LRUReplacer::Unpin(frame_id_t frame_id) {
   lock.lock();
   if (hash_map.find(frame_id) != hash_map.end()) {
+    hash_map[frame_id] = timestamp++;
     lock.unlock();
     return;
   }

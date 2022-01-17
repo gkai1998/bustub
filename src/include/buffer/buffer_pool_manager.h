@@ -126,6 +126,7 @@ class BufferPoolManager {
    */
   bool UnpinPageImpl(page_id_t page_id, bool is_dirty);
 
+  // bool PinPageImpl(frame_id_t frame_id);
   /**
    * Flushes the target page to disk.
    * @param page_id id of page to be flushed, cannot be INVALID_PAGE_ID
