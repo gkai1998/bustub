@@ -471,4 +471,124 @@ TEST(BufferPoolManagerConcurrencyTest, HardTest_4) {
   }
 }
 
+TEST(BufferPoolManagerConcurrencyTest, HardTest_5) {
+  auto *disk_manager = new DiskManager("test.db");
+  std::shared_ptr<BufferPoolManager> bpm{new BufferPoolManager(50, disk_manager)};
+
+  page_id_t temp_page_id;
+  std::vector<page_id_t> page_ids;
+  for (int i = 0; i < 50; i++) {
+    auto *new_page = bpm->NewPage(&temp_page_id, nullptr);
+    EXPECT_NE(nullptr, new_page);
+    ASSERT_NE(nullptr, new_page);
+    strcpy(new_page->GetData(), std::to_string(temp_page_id).c_str());  // NOLINT
+    page_ids.push_back(temp_page_id);
+  }
+
+  for (int i = 0; i < 50; i++) {
+    if (i % 2 == 0) {
+      EXPECT_EQ(1, bpm->UnpinPage(page_ids[i], true, nullptr));
+    } else {
+      EXPECT_EQ(1, bpm->UnpinPage(page_ids[i], false, nullptr));
+    }
+  }
+
+  for (int i = 0; i < 50; i++) {
+    auto *new_page = bpm->NewPage(&temp_page_id, nullptr);
+    EXPECT_NE(nullptr, new_page);
+    ASSERT_NE(nullptr, new_page);
+    EXPECT_EQ(1, bpm->UnpinPage(temp_page_id, true, nullptr));
+  }
+
+  for (int j = 0; j < 50; j++) {
+    auto *page = bpm->FetchPage(page_ids[j], nullptr);
+    EXPECT_NE(nullptr, page);
+    ASSERT_NE(nullptr, page);
+    strcpy(page->GetData(), (std::string("Hard") + std::to_string(page_ids[j])).c_str());  // NOLINT
+  }
+
+  for (int i = 0; i < 50; i++) {
+    if (i % 2 == 0) {
+      EXPECT_EQ(1, bpm->UnpinPage(page_ids[i], false, nullptr));
+    } else {
+      EXPECT_EQ(1, bpm->UnpinPage(page_ids[i], true, nullptr));
+    }
+  }
+
+  for (int i = 0; i < 50; i++) {
+    auto *new_page = bpm->NewPage(&temp_page_id, nullptr);
+    EXPECT_NE(nullptr, new_page);
+    ASSERT_NE(nullptr, new_page);
+    EXPECT_EQ(1, bpm->UnpinPage(temp_page_id, true, nullptr));
+  }
+
+  {
+    int j = 0;
+    page_id_t temp_page_id;
+    while (j < 50) {
+      if (j != 0) {
+        auto *page_local = bpm->FetchPage(temp_page_id, nullptr);
+        while (page_local == nullptr) {
+          page_local = bpm->FetchPage(temp_page_id, nullptr);
+        }
+        EXPECT_NE(nullptr, page_local);
+        ASSERT_NE(nullptr, page_local);
+        EXPECT_EQ(0, std::strcmp(std::to_string(temp_page_id).c_str(), (page_local->GetData())));
+        EXPECT_EQ(1, bpm->UnpinPage(temp_page_id, false, nullptr));
+        // If the page is still in buffer pool then put it in free list,
+        // else also we are happy
+        EXPECT_EQ(1, bpm->DeletePage(temp_page_id, nullptr));
+      }
+
+      auto *page = bpm->FetchPage(page_ids[j], nullptr);
+      while (page == nullptr) {
+        page = bpm->FetchPage(page_ids[j], nullptr);
+      }
+      EXPECT_NE(nullptr, page);
+      ASSERT_NE(nullptr, page);
+      if (j % 2 == 0) {
+        EXPECT_EQ(0, std::strcmp(std::to_string(page_ids[j]).c_str(), (page->GetData())));
+        EXPECT_EQ(1, bpm->UnpinPage(page_ids[j], false, nullptr));
+      } else {
+        EXPECT_EQ(0, std::strcmp((std::string("Hard") + std::to_string(page_ids[j])).c_str(), (page->GetData())));
+        EXPECT_EQ(1, bpm->UnpinPage(page_ids[j], false, nullptr));
+      }
+      j = (j + 1);
+
+      page = bpm->NewPage(&temp_page_id, nullptr);
+      while (page == nullptr) {
+        page = bpm->NewPage(&temp_page_id, nullptr);
+      }
+      EXPECT_NE(nullptr, page);
+      ASSERT_NE(nullptr, page);
+      strcpy(page->GetData(), std::to_string(temp_page_id).c_str());  // NOLINT
+      // FLush page instead of unpining with true
+      EXPECT_EQ(1, bpm->FlushPage(temp_page_id, nullptr));
+      EXPECT_EQ(1, bpm->UnpinPage(temp_page_id, false, nullptr));
+
+      // Flood with new pages
+      for (int k = 0; k < 10; k++) {
+        page_id_t flood_page_id;
+        auto *flood_page = bpm->NewPage(&flood_page_id, nullptr);
+        while (flood_page == nullptr) {
+          flood_page = bpm->NewPage(&flood_page_id, nullptr);
+        }
+        EXPECT_NE(nullptr, flood_page);
+        ASSERT_NE(nullptr, flood_page);
+        EXPECT_EQ(1, bpm->UnpinPage(flood_page_id, false, nullptr));
+        // If the page is still in buffer pool then put it in free list,
+        // else also we are happy
+        EXPECT_EQ(1, bpm->DeletePage(flood_page_id, nullptr));
+      }
+    }
+  }
+
+  for (int j = 0; j < 50; j++) {
+    EXPECT_EQ(1, bpm->DeletePage(page_ids[j], nullptr));
+  }
+
+  remove("test.db");
+  remove("test.log");
+  delete disk_manager;
+}
 }  // namespace bustub

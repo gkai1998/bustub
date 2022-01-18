@@ -118,9 +118,10 @@ bool BufferPoolManager::FlushPageImpl(page_id_t page_id) {
     flush_page->is_dirty_ = false;
     disk_manager_->WritePage(flush_page->GetPageId(), flush_page->GetData());
   }
-  page_table_.erase(page_id);
-  free_list_.push_back(frame_id);
-  replacer_->Pin(frame_id);
+  // page_table_.erase(page_id);
+  // free_list_.push_back(frame_id);
+  // replacer_->Pin(frame_id);
+  flush_page->is_dirty_ = false;
   latch_.unlock();
   return true;
 }

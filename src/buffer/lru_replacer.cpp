@@ -14,7 +14,7 @@
 
 namespace bustub {
 
-LRUReplacer::LRUReplacer(size_t num_pages) : size(num_pages), timestamp(1) {}
+LRUReplacer::LRUReplacer(size_t num_pages) : size(num_pages), timestamp(1) { hash_map.reserve(size); }
 
 LRUReplacer::~LRUReplacer() = default;
 
