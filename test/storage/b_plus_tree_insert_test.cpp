@@ -175,13 +175,14 @@ TEST(BPlusTreeTests, InsertTest3) {
     tree.Insert(index_key, rid, transaction);
   }
   std::string filename = "test3.dot";
-  // tree.Print(bpm);
+  tree.Print(bpm);
   tree.Draw(bpm, filename);
 
   std::vector<RID> rids;
   for (auto key : keys) {
     rids.clear();
     index_key.SetFromInteger(key);
+    // std::cout << key << std::endl;
     tree.GetValue(index_key, &rids);
     EXPECT_EQ(rids.size(), 1);
 

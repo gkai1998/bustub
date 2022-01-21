@@ -12,7 +12,7 @@
 
 namespace bustub {
 
-TEST(BPlusTreeTests, DISABLED_DeleteTest1) {
+TEST(BPlusTreeTests, DeleteTest1) {
   // create KeyComparator and index schema
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
@@ -98,7 +98,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest1) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
+TEST(BPlusTreeTests, DeleteTest2) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema);
@@ -183,7 +183,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest2) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_DeleteTest3) {
+TEST(BPlusTreeTests, DeleteTest3) {
   // create KeyComparator and index schema
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);
@@ -247,9 +247,9 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest3) {
   // tree.Print(bpm);
   tree.Draw(bpm, filename);
 
-  int64_t start_key;
-  std::cout << "start_key=? ";
-  scanf("%ld", &start_key);
+  int64_t start_key=45;
+  // std::cout << "start_key=? ";
+  // scanf("%ld", &start_key);
   std::vector<int64_t> left_keys;
   std::sort(keys.begin(), keys.end());
   std::sort(remove_keys.begin(), remove_keys.end());
@@ -277,7 +277,7 @@ TEST(BPlusTreeTests, DISABLED_DeleteTest3) {
   remove("test.log");
 }
 
-TEST(BPlusTreeTests, DISABLED_DeleteTest4) {
+TEST(BPlusTreeTests, DeleteTest4) {
   // create KeyComparator and index schema
   std::string createStmt = "a bigint";
   Schema *key_schema = ParseCreateStatement(createStmt);

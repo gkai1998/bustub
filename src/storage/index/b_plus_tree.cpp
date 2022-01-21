@@ -51,6 +51,7 @@ bool BPLUSTREE_TYPE::GetValue(const KeyType &key, std::vector<ValueType> *result
   LeafPage *leaf_page_ptr = reinterpret_cast<LeafPage *>(leaf_page->GetData());
   RID res;
   bool isfind = leaf_page_ptr->Lookup(key, &res, comparator_);
+  buffer_pool_manager_->UnpinPage(leaf_page_ptr->GetPageId(),false);
   if (isfind) {
     result->push_back(res);
     return true;
@@ -227,9 +228,10 @@ void BPLUSTREE_TYPE::Remove(const KeyType &key, Transaction *transaction) {
   }
   if (ret==false)
   {
-    page->SetDirty(true);
-    
+    buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(),true);
+
   }else{
+    buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(),true);
     buffer_pool_manager_->DeletePage(leaf_page->GetPageId());
   }
   
